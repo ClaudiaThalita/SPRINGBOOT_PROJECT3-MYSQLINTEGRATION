@@ -14,11 +14,14 @@ import org.springframework.stereotype.Service;
 import com.claudiathalita.domain.Cidade;
 import com.claudiathalita.domain.Cliente;
 import com.claudiathalita.domain.Endereco;
+import com.claudiathalita.domain.enums.Perfil;
 import com.claudiathalita.domain.enums.TipoCliente;
 import com.claudiathalita.dto.ClienteDTO;
 import com.claudiathalita.dto.ClienteNewDTO;
 import com.claudiathalita.repositories.ClienteRepository;
 import com.claudiathalita.repositories.EnderecoRepository;
+import com.claudiathalita.security.UserSS;
+import com.claudiathalita.services.exception.AuthorizationException;
 import com.claudiathalita.services.exception.DataIntegrityException;
 import com.claudiathalita.services.exception.ObjectNotFoundException;
 
@@ -35,6 +38,12 @@ public class ClienteService {
 	private BCryptPasswordEncoder pe;
 	
 	public Cliente find(Integer id) {
+		UserSS user = UserService.authenticated();
+		if (user==null || !user.hasRole(Perfil.ADMIN) && !id.equals(user.getId())) {
+			throw new AuthorizationException("Acesso negado");
+		}
+
+		
 		Optional<Cliente> obj = repo.findById(id);
 		return obj.orElseThrow(() -> new ObjectNotFoundException(
 		"Objeto não encontrado! Id: " + id + ", Tipo: " + Cliente.class.getName(), null));
