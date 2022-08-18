@@ -4,18 +4,23 @@ import java.util.Date;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.claudiathalita.domain.Cliente;
 import com.claudiathalita.domain.ItemPedido;
 import com.claudiathalita.domain.PagamentoComBoleto;
 import com.claudiathalita.domain.Pedido;
 import com.claudiathalita.domain.enums.EstadoPagamento;
-import com.claudiathalita.repositories.ClienteRepository;
 import com.claudiathalita.repositories.ItemPedidoRepository;
 import com.claudiathalita.repositories.PagamentoRepository;
 import com.claudiathalita.repositories.PedidoRepository;
 import com.claudiathalita.repositories.ProdutoRepository;
+import com.claudiathalita.security.UserSS;
+import com.claudiathalita.services.exception.AuthorizationException;
 import com.claudiathalita.services.exception.ObjectNotFoundException;
 
 @Service 
@@ -72,6 +77,15 @@ public class PedidoService {
 		itemPedidoRepository.saveAll(obj.getItens());
 		emailService.sendOrderConfirmationHtmlEmail(obj);
 		return obj;
+	}
+	public Page<Pedido> findPage(Integer page, Integer linesPerPage, String orderBy, String direction) {
+		UserSS user = UserService.authenticated();
+		if (user == null) {
+			throw new AuthorizationException("Acesso negado");
+		}
+		PageRequest pageRequest = PageRequest.of(page, linesPerPage, Direction.valueOf(direction), orderBy);
+		Cliente cliente =  clienteService.find(user.getId());
+		return repo.findByCliente(cliente, pageRequest);
 	}
 
 }
